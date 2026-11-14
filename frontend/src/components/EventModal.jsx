@@ -7,7 +7,10 @@ function toLocalInputValue(iso) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-function defaultRange(seedDate) {
+function defaultRange(seedDate, seedEnd) {
+  if (seedDate && seedEnd) {
+    return { start: new Date(seedDate), end: new Date(seedEnd) }
+  }
   const start = new Date(seedDate || Date.now())
   start.setMinutes(0, 0, 0)
   start.setHours(start.getHours() + 1)
@@ -16,8 +19,17 @@ function defaultRange(seedDate) {
   return { start, end }
 }
 
-export default function EventModal({ event, seedDate, onClose, onSave, onDelete, busy }) {
-  const defaults = defaultRange(seedDate)
+export default function EventModal({
+  event,
+  seedDate,
+  seedEnd,
+  seedAllDay,
+  onClose,
+  onSave,
+  onDelete,
+  busy,
+}) {
+  const defaults = defaultRange(seedDate, seedEnd)
   const [title, setTitle] = useState(event?.title || '')
   const [description, setDescription] = useState(event?.description || '')
   const [startAt, setStartAt] = useState(
@@ -26,7 +38,7 @@ export default function EventModal({ event, seedDate, onClose, onSave, onDelete,
   const [endAt, setEndAt] = useState(
     toLocalInputValue(event?.endAt) || toLocalInputValue(defaults.end.toISOString()),
   )
-  const [allDay, setAllDay] = useState(Boolean(event?.allDay))
+  const [allDay, setAllDay] = useState(Boolean(event ? event.allDay : seedAllDay))
   const [error, setError] = useState('')
 
   useEffect(() => {

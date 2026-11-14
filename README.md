@@ -2,12 +2,12 @@
 
 Stage 1: user authentication and a personal calendar with basic event CRUD.
 
-**Stack:** React (Vite) frontend · Java Spring Boot backend · PostgreSQL
+**Stack:** React (Vite) + [FullCalendar](https://fullcalendar.io/docs/react) frontend · Java Spring Boot backend · PostgreSQL
 
 ## What's included
 
 - **Auth:** sign up / sign in with BCrypt password hashing and JWT bearer tokens
-- **Calendar:** month view for authenticated users
+- **Calendar:** FullCalendar month / week / day views; click or drag across slots to create, drag or resize events to reschedule
 - **Events:** create, list (by date range), edit, and delete — scoped to the signed-in user
 - **Docker Compose:** PostgreSQL (and optional full stack)
 
@@ -110,8 +110,8 @@ Send `Authorization: Bearer <token>` on protected routes.
 ## Demo notes
 
 1. Open `http://localhost:5173` → **Create an account** (password ≥ 8 characters).
-2. You land on the month calendar. Use **New event** or click a day to add one.
-3. Click an event chip to edit or delete.
+2. You land on the month calendar. Use **New event**, click a day, or drag across days / time slots to add one. Switch to **Week** or **Day** for a time grid.
+3. Click an event to edit or delete it, or drag / resize it to reschedule.
 4. **Sign out**, then sign back in — your events are still there (per-user, JWT-scoped).
 
 No seed users or secrets are checked in.

@@ -1,118 +1,111 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/react/daygrid'
+import interactionPlugin from '@fullcalendar/react/interaction'
+import pulseThemePlugin from '@fullcalendar/react/themes/pulse'
+import timeGridPlugin from '@fullcalendar/react/timegrid'
+import '@fullcalendar/react/skeleton.css'
+import '@fullcalendar/react/themes/pulse/theme.css'
+import '@fullcalendar/react/themes/pulse/palettes/green.css'
 import { api } from '../api'
 import { useAuth } from '../auth.jsx'
 import EventModal from '../components/EventModal.jsx'
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
 
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
+const PLUGINS = [pulseThemePlugin, dayGridPlugin, timeGridPlugin, interactionPlugin]
+
+const HEADER_TOOLBAR = {
+  left: 'prev,next today',
+  center: 'title',
+  right: 'dayGridMonth,timeGridWeek,timeGridDay',
 }
 
-function addMonths(date, delta) {
-  return new Date(date.getFullYear(), date.getMonth() + delta, 1)
+const EVENT_TIME_FORMAT = { hour: 'numeric', minute: '2-digit', meridiem: 'short' }
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
-function monthLabel(date) {
-  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+// All-day events are painted on every local day they touch; FullCalendar wants an exclusive midnight end.
+function allDayEnd(end) {
+  const day = startOfDay(end)
+  if (end.getTime() !== day.getTime()) day.setDate(day.getDate() + 1)
+  return day
 }
 
-function buildCells(monthDate) {
-  const first = startOfMonth(monthDate)
-  const startOffset = first.getDay()
-  const gridStart = new Date(first)
-  gridStart.setDate(first.getDate() - startOffset)
-
-  const cells = []
-  for (let i = 0; i < 42; i += 1) {
-    const day = new Date(gridStart)
-    day.setDate(gridStart.getDate() + i)
-    cells.push(day)
+function toCalendarEvent(event) {
+  const base = { id: event.id, title: event.title, extendedProps: { source: event } }
+  if (!event.allDay) {
+    return { ...base, start: event.startAt, end: event.endAt }
   }
-  return cells
-}
-
-function dayKey(date) {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
-}
-
-function sameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
-
-function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
-
-function rangeForMonth(monthDate) {
-  const from = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
-  const to = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1)
-  // Include trailing/leading grid days
-  from.setDate(from.getDate() - from.getDay())
-  to.setDate(to.getDate() + (6 - new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDay()))
-  return { from: from.toISOString(), to: to.toISOString() }
+  const start = startOfDay(new Date(event.startAt))
+  const end = allDayEnd(new Date(event.endAt))
+  return { ...base, allDay: true, start, end: end > start ? end : new Date(start.getTime() + DAY_MS) }
 }
 
 export default function CalendarPage() {
   const { auth, logout } = useAuth()
-  const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const calendarRef = useRef(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  const cells = useMemo(() => buildCells(month), [month])
-  const today = useMemo(() => new Date(), [])
-
-  const eventsByDay = useMemo(() => {
-    const map = new Map()
-    for (const event of events) {
-      const start = new Date(event.startAt)
-      const end = new Date(event.endAt)
-      const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate())
-      const last = new Date(end.getFullYear(), end.getMonth(), end.getDate())
-      // If event ends at midnight, don't paint that day
-      if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
-        last.setDate(last.getDate() - 1)
+  const fetchEvents = useCallback(
+    async (info) => {
+      try {
+        const data = await api.listEvents(auth.token, info.start.toISOString(), info.end.toISOString())
+        setError('')
+        return data.map(toCalendarEvent)
+      } catch (err) {
+        setError(err.message || 'Failed to load events')
+        throw err
       }
-      while (cursor <= last) {
-        const key = dayKey(cursor)
-        if (!map.has(key)) map.set(key, [])
-        map.get(key).push(event)
-        cursor.setDate(cursor.getDate() + 1)
-      }
-    }
-    for (const list of map.values()) {
-      list.sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
-    }
-    return map
-  }, [events])
+    },
+    [auth.token],
+  )
 
-  async function loadEvents() {
-    setLoading(true)
-    setError('')
-    try {
-      const { from, to } = rangeForMonth(month)
-      const data = await api.listEvents(auth.token, from, to)
-      setEvents(data)
-    } catch (err) {
-      setError(err.message || 'Failed to load events')
-    } finally {
-      setLoading(false)
+  function refetch() {
+    calendarRef.current?.getApi().refetchEvents()
+  }
+
+  function handleSelect(info) {
+    info.view.calendar.unselect()
+    const singleMonthDay =
+      info.view.type === 'dayGridMonth' && info.end.getTime() - info.start.getTime() <= DAY_MS
+    if (singleMonthDay) {
+      setModal({ event: null, seedDate: info.start })
+    } else {
+      setModal({ event: null, seedDate: info.start, seedEnd: info.end, seedAllDay: info.allDay })
     }
   }
 
-  useEffect(() => {
-    loadEvents()
-  }, [month, auth.token])
+  function handleEventClick(info) {
+    setModal({ event: info.event.extendedProps.source })
+  }
+
+  async function handleEventChange(info) {
+    const { event } = info
+    const source = event.extendedProps.source
+    const start = event.start
+    const end = event.end ?? new Date(start.getTime() + (event.allDay ? DAY_MS : HOUR_MS))
+    setError('')
+    try {
+      await api.updateEvent(auth.token, event.id, {
+        title: source.title,
+        description: source.description,
+        startAt: start.toISOString(),
+        endAt: end.toISOString(),
+        allDay: event.allDay,
+      })
+      refetch()
+    } catch (err) {
+      info.revert()
+      setError(err.message || 'Failed to move event')
+    }
+  }
 
   async function saveEvent(payload) {
     setBusy(true)
@@ -123,7 +116,7 @@ export default function CalendarPage() {
         await api.createEvent(auth.token, payload)
       }
       setModal(null)
-      await loadEvents()
+      refetch()
     } finally {
       setBusy(false)
     }
@@ -135,7 +128,7 @@ export default function CalendarPage() {
     try {
       await api.deleteEvent(auth.token, event.id)
       setModal(null)
-      await loadEvents()
+      refetch()
     } catch (err) {
       setError(err.message || 'Failed to delete event')
     } finally {
@@ -150,25 +143,7 @@ export default function CalendarPage() {
           <p className="brand compact">AI Smart Calendar</p>
           <p className="welcome">Hi, {auth.displayName}</p>
         </div>
-        <button type="button" className="btn ghost" onClick={logout}>
-          Sign out
-        </button>
-      </header>
-
-      <section className="calendar-toolbar">
-        <div className="month-nav">
-          <button type="button" className="btn ghost" onClick={() => setMonth((m) => addMonths(m, -1))}>
-            ‹
-          </button>
-          <h1>{monthLabel(month)}</h1>
-          <button type="button" className="btn ghost" onClick={() => setMonth((m) => addMonths(m, 1))}>
-            ›
-          </button>
-        </div>
         <div className="toolbar-actions">
-          <button type="button" className="btn ghost" onClick={() => setMonth(startOfMonth(new Date()))}>
-            Today
-          </button>
           <button
             type="button"
             className="btn primary"
@@ -176,67 +151,43 @@ export default function CalendarPage() {
           >
             New event
           </button>
+          <button type="button" className="btn ghost" onClick={logout}>
+            Sign out
+          </button>
         </div>
-      </section>
+      </header>
 
       {error && <p className="banner error">{error}</p>}
       {loading && <p className="banner">Loading events…</p>}
 
-      <div className="weekday-row">
-        {WEEKDAYS.map((day) => (
-          <div key={day} className="weekday">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      <div className="month-grid">
-        {cells.map((day) => {
-          const inMonth = day.getMonth() === month.getMonth()
-          const key = dayKey(day)
-          const dayEvents = eventsByDay.get(key) || []
-          return (
-            <button
-              type="button"
-              key={key}
-              className={[
-                'day-cell',
-                inMonth ? '' : 'muted',
-                sameDay(day, today) ? 'today' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => setModal({ event: null, seedDate: day })}
-            >
-              <span className="day-number">{day.getDate()}</span>
-              <div className="day-events">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <span
-                    key={event.id}
-                    className="event-chip"
-                    title={event.title}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setModal({ event, seedDate: day })
-                    }}
-                  >
-                    {!event.allDay && <em>{formatTime(event.startAt)}</em>}
-                    {event.title}
-                  </span>
-                ))}
-                {dayEvents.length > 3 && (
-                  <span className="more">+{dayEvents.length - 3} more</span>
-                )}
-              </div>
-            </button>
-          )
-        })}
-      </div>
+      <section className="calendar-card">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={PLUGINS}
+          initialView="dayGridMonth"
+          headerToolbar={HEADER_TOOLBAR}
+          events={fetchEvents}
+          loading={setLoading}
+          selectable
+          selectMirror
+          editable
+          dayMaxEvents={3}
+          nowIndicator
+          scrollTime="08:00:00"
+          eventTimeFormat={EVENT_TIME_FORMAT}
+          select={handleSelect}
+          eventClick={handleEventClick}
+          eventDrop={handleEventChange}
+          eventResize={handleEventChange}
+        />
+      </section>
 
       {modal && (
         <EventModal
           event={modal.event}
           seedDate={modal.seedDate}
+          seedEnd={modal.seedEnd}
+          seedAllDay={modal.seedAllDay}
           busy={busy}
           onClose={() => setModal(null)}
           onSave={saveEvent}

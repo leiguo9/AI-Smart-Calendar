@@ -6,10 +6,10 @@ export const EVENT_CATEGORIES = [
 ]
 
 export const CATEGORY_COLORS = {
-  WORK: { background: '#1f4b3a', border: '#16382c' },
-  PERSONAL: { background: '#c45c26', border: '#9a451c' },
-  HEALTH: { background: '#2f6f7e', border: '#245863' },
-  OTHER: { background: '#5d6f66', border: '#46554e' },
+  WORK: { color: '#1f4b3a', contrast: '#f4faf6' },
+  PERSONAL: { color: '#c45c26', contrast: '#fff8f3' },
+  HEALTH: { color: '#2f6f7e', contrast: '#f3fafb' },
+  OTHER: { color: '#5d6f66', contrast: '#f5f7f6' },
 }
 
 export function normalizeCategory(category) {

@@ -1,3 +1,7 @@
+/**
+ * Keep these values identical to backend EventCategory enum.
+ * FullCalendar uses `color` / `contrastColor` for event chips.
+ */
 export const EVENT_CATEGORIES = [
   { value: 'WORK', label: 'Work' },
   { value: 'PERSONAL', label: 'Personal' },

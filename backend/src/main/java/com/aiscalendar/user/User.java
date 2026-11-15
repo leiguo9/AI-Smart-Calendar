@@ -9,6 +9,11 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Account row in {@code users}.
+ *
+ * <p>{@link #passwordHash} is BCrypt — never store or return the plain password.
+ */
 @Entity
 @Table(name = "users")
 public class User {

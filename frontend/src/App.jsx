@@ -3,6 +3,7 @@ import { useAuth } from './auth.jsx'
 import AuthPage from './pages/AuthPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
 
+/** Route guard: wait for AuthProvider, then require a logged-in user. */
 function Protected({ children }) {
   const { auth, ready } = useAuth()
   if (!ready) {
@@ -14,6 +15,7 @@ function Protected({ children }) {
   return children
 }
 
+/** Opposite guard: logged-in users shouldn't see login/signup again. */
 function PublicOnly({ children }) {
   const { auth, ready } = useAuth()
   if (!ready) {

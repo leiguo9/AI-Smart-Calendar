@@ -12,6 +12,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Event business rules and persistence.
+ *
+ * <p>Ownership is enforced here: updates/deletes use {@code findByIdAndOwnerId}, so user A cannot
+ * mutate user B's events even if they guess a UUID.
+ */
 @Service
 public class EventService {
 
@@ -59,6 +65,7 @@ public class EventService {
         eventRepository
             .findByIdAndOwnerId(eventId, ownerId)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Event not found"));
+    // Entity is managed inside the transaction — mutating fields is enough; Hibernate flushes.
     event.update(
         request.title().trim(),
         normalizeDescription(request.description()),

@@ -8,6 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+/**
+ * Spring Security's view of the logged-in user (adapter around our {@link User} entity).
+ *
+ * <p>{@link #getUsername()} returns email because that's what we authenticate with.
+ */
 public class UserPrincipal implements UserDetails {
 
   private final UUID id;
@@ -32,6 +37,7 @@ public class UserPrincipal implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
+    // Single-role app for now; expand later for admin/etc.
     return List.of(new SimpleGrantedAuthority("ROLE_USER"));
   }
 

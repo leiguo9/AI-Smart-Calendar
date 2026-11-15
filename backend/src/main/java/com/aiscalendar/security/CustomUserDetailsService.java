@@ -6,6 +6,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Bridge Spring Security login → our {@link UserRepository}.
+ *
+ * <p>"Username" here is email. Used by Spring's DaoAuthenticationProvider during {@code /login}.
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 

@@ -1,3 +1,9 @@
+/**
+ * Thin fetch wrapper around the Spring Boot API.
+ *
+ * - In Vite dev, leave VITE_API_BASE_URL empty and use the proxy in vite.config.js (`/api` → :8080).
+ * - In Docker, the frontend often sets VITE_API_BASE_URL to http://localhost:8080 at build time.
+ */
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 async function request(path, { method = 'GET', body, token } = {}) {
@@ -5,6 +11,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
   }
+  // JWT from AuthProvider — backend JwtAuthenticationFilter expects this header.
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
@@ -15,12 +22,14 @@ async function request(path, { method = 'GET', body, token } = {}) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
 
+  // DELETE events returns 204 No Content — no JSON body.
   if (response.status === 204) {
     return null
   }
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
+    // Match GlobalExceptionHandler's { error, details? } shape.
     const message = data.error || data.details || `Request failed (${response.status})`
     throw new Error(message)
   }
@@ -37,6 +46,9 @@ export const api = {
     }),
   createEvent: (token, payload) =>
     request('/api/events', { method: 'POST', body: payload, token }),
+  /** One conversational turn; body = { messages, timeZone }. */
+  assistantTurn: (token, payload) =>
+    request('/api/events/assistant', { method: 'POST', body: payload, token }),
   updateEvent: (token, id, payload) =>
     request(`/api/events/${id}`, { method: 'PUT', body: payload, token }),
   deleteEvent: (token, id) => request(`/api/events/${id}`, { method: 'DELETE', token }),

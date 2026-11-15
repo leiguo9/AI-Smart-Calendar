@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST CRUD for calendar events. Every method takes {@link UserPrincipal} so we always scope
+ * data to the signed-in user (never trust a client-supplied owner id).
+ */
 @RestController
 @RequestMapping("/api/events")
 public class EventController {
@@ -31,6 +35,7 @@ public class EventController {
     this.eventService = eventService;
   }
 
+  /** FullCalendar asks for events overlapping the visible range ({@code from}/{@code to}). */
   @GetMapping
   public List<EventResponse> list(
       @AuthenticationPrincipal UserPrincipal principal,

@@ -5,6 +5,11 @@ import com.aiscalendar.event.EventCategory;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * API-facing event shape (no JPA / owner details leaked).
+ *
+ * <p>{@link #from} is the mapper from entity → DTO so controllers stay free of field copying.
+ */
 public record EventResponse(
     UUID id,
     String title,

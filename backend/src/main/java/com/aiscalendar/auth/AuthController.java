@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Public auth endpoints (no JWT required — see {@link com.aiscalendar.security.SecurityConfig}).
+ *
+ * <p>Both signup and login return the same shape: a JWT plus basic user info the frontend stores.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

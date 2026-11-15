@@ -20,6 +20,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Spring Security setup for a JWT API (no server sessions / cookies for login).
+ *
+ * <p>Request path:
+ * <ol>
+ *   <li>{@link JwtAuthenticationFilter} reads {@code Authorization: Bearer …} if present</li>
+ *   <li>Authorization rules decide public vs authenticated routes</li>
+ *   <li>Controllers can inject {@link UserPrincipal} via {@code @AuthenticationPrincipal}</li>
+ * </ol>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
@@ -40,22 +50,27 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
+    http
+        // Stateless JWT APIs typically disable CSRF (no cookie session to forge).
+        .csrf(csrf -> csrf.disable())
         .cors(Customizer.withDefaults())
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/api/auth/**", "/actuator/health")
                     .permitAll()
+                    // Browser CORS preflight must be allowed without a token.
                     .requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
         .authenticationProvider(authenticationProvider())
+        // Run our JWT filter before username/password form filter (which we don't really use).
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
 
+  /** How login verifies email+password against the database. */
   @Bean
   public DaoAuthenticationProvider authenticationProvider() {
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -75,6 +90,7 @@ public class SecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
+  /** Allows the Vite/React origin to call this API from the browser. */
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();

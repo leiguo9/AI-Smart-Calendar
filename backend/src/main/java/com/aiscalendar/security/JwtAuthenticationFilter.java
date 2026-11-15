@@ -14,6 +14,13 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Runs once per HTTP request. If a valid Bearer JWT is present, loads the user and stores
+ * authentication in {@link SecurityContextHolder} so controllers see the current user.
+ *
+ * <p>Missing/invalid tokens are ignored here — later authorization still returns 401 for protected
+ * routes. That way public routes like {@code /api/auth/login} keep working.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -35,9 +42,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
 
-    String token = header.substring(7);
+    String token = header.substring(7); // strip "Bearer "
     if (jwtService.isValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
       UUID userId = jwtService.extractUserId(token);
+      // Re-load user from DB so deleted/disabled accounts don't keep working on old tokens.
       userRepository
           .findById(userId)
           .ifPresent(

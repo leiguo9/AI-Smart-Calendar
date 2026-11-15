@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 
+/** Shared login/signup form. `mode` is "login" or "signup" from App routes. */
 export default function AuthPage({ mode }) {
   const isSignup = mode === 'signup'
   const { login, signup } = useAuth()

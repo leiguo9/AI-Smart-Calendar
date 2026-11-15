@@ -24,7 +24,8 @@ yarn-error.log*
 
 # Env / secrets
 .env
-.env.local
+.env.*
+!.env.example
 *.pem
 *.key
 

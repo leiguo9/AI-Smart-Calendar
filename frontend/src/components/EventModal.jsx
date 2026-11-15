@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { EVENT_CATEGORIES, normalizeCategory } from '../eventCategories.js'
 
+/** Convert an ISO string → value for <input type="datetime-local"> (local wall time). */
 function toLocalInputValue(iso) {
   if (!iso) return ''
   const date = new Date(iso)
@@ -8,6 +9,7 @@ function toLocalInputValue(iso) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+/** Default 1-hour slot starting at the next whole hour, or an explicit selected range. */
 function defaultRange(seedDate, seedEnd) {
   if (seedDate && seedEnd) {
     return { start: new Date(seedDate), end: new Date(seedEnd) }
@@ -20,19 +22,29 @@ function defaultRange(seedDate, seedEnd) {
   return { start, end }
 }
 
+/**
+ * Create / edit dialog.
+ *
+ * - `event` set → edit mode (shows Delete).
+ * - otherwise create mode; optional seed* props prefill from calendar select or AI draft.
+ */
 export default function EventModal({
   event,
   seedDate,
   seedEnd,
   seedAllDay,
+  seedTitle,
+  seedDescription,
+  seedCategory,
+  warning,
   onClose,
   onSave,
   onDelete,
   busy,
 }) {
   const defaults = defaultRange(seedDate, seedEnd)
-  const [title, setTitle] = useState(event?.title || '')
-  const [description, setDescription] = useState(event?.description || '')
+  const [title, setTitle] = useState(event?.title || seedTitle || '')
+  const [description, setDescription] = useState(event?.description || seedDescription || '')
   const [startAt, setStartAt] = useState(
     toLocalInputValue(event?.startAt) || toLocalInputValue(defaults.start.toISOString()),
   )
@@ -40,7 +52,7 @@ export default function EventModal({
     toLocalInputValue(event?.endAt) || toLocalInputValue(defaults.end.toISOString()),
   )
   const [allDay, setAllDay] = useState(Boolean(event ? event.allDay : seedAllDay))
-  const [category, setCategory] = useState(normalizeCategory(event?.category))
+  const [category, setCategory] = useState(normalizeCategory(event?.category || seedCategory))
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -94,6 +106,7 @@ export default function EventModal({
           </button>
         </div>
         <form className="event-form" onSubmit={handleSubmit}>
+          {warning && <p className="banner warning">{warning}</p>}
           <label>
             Title
             <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} />

@@ -10,6 +10,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Central place that maps exceptions → HTTP responses for all controllers.
+ *
+ * <p>Keeps controllers thin: they throw (or let validation fail) instead of building error JSON.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -20,10 +25,12 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(BadCredentialsException.class)
   public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
+    // Generic message on purpose — don't reveal whether email or password was wrong.
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(Map.of("error", "Invalid email or password"));
   }
 
+  /** Triggered when {@code @Valid} fails on a request body (e.g. blank title). */
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
     String details =
@@ -35,6 +42,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
+    // Catch-all: log-worthy server bugs should not dump stack traces to the browser.
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(Map.of("error", "Unexpected server error"));
   }

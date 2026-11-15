@@ -16,6 +16,12 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * JPA entity for one calendar event row ({@code calendar_events}).
+ *
+ * <p>Times are {@link Instant} (UTC). The frontend converts to local for display/editing.
+ * {@link #allDay} is a flag the UI uses; we still store concrete start/end instants.
+ */
 @Entity
 @Table(name = "calendar_events")
 public class CalendarEvent {
@@ -24,6 +30,7 @@ public class CalendarEvent {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  /** Lazy: we usually don't need the full User graph when listing events. */
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "owner_id", nullable = false)
   private User owner;
@@ -43,6 +50,7 @@ public class CalendarEvent {
   @Column(nullable = false)
   private boolean allDay = false;
 
+  /** Stored as string enum values (WORK, PERSONAL, …) — easier to read in SQL than ordinals. */
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   @ColumnDefault("'OTHER'")
@@ -54,6 +62,7 @@ public class CalendarEvent {
   @Column(nullable = false)
   private Instant updatedAt = Instant.now();
 
+  /** Required by JPA; application code uses the public constructor. */
   protected CalendarEvent() {}
 
   public CalendarEvent(

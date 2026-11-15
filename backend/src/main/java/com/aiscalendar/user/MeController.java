@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * "Who am I?" endpoint used on app load to validate a stored JWT and refresh profile fields.
+ */
 @RestController
 @RequestMapping("/api/me")
 public class MeController {

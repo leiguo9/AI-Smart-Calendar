@@ -16,6 +16,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Business logic for signup/login.
+ *
+ * <p>Passwords are never stored in plain text — only a BCrypt hash. After a successful auth we
+ * mint a JWT the client sends as {@code Authorization: Bearer …} on later requests.
+ */
 @Service
 public class AuthService {
 
@@ -37,6 +43,7 @@ public class AuthService {
 
   @Transactional
   public AuthResponse signup(SignupRequest request) {
+    // Normalize email so "Ada@X.com" and "ada@x.com" collide as the same account.
     String email = request.email().trim().toLowerCase();
     if (userRepository.existsByEmailIgnoreCase(email)) {
       throw new ApiException(HttpStatus.CONFLICT, "Email already registered");
@@ -54,6 +61,8 @@ public class AuthService {
   }
 
   public AuthResponse login(LoginRequest request) {
+    // Spring Security checks email+password via DaoAuthenticationProvider + BCrypt.
+    // On failure it throws BadCredentialsException (handled globally as 401).
     Authentication authentication =
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(

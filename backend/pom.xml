@@ -15,7 +15,7 @@
   <artifactId>ai-smart-calendar</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>AI Smart Calendar</name>
-  <description>Stage 1 — auth and calendar event CRUD</description>
+  <description>Stage 2 — auth, calendar CRUD, and conversational NL event assistant</description>
 
   <properties>
     <java.version>21</java.version>

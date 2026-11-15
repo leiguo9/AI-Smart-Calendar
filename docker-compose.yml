@@ -1,3 +1,6 @@
+# Full local stack. Compose auto-loads a root `.env` for ${VAR} substitution
+# (e.g. OPENAI_API_KEY) — that file is gitignored; see .env.example.
+
 services:
   db:
     image: postgres:16-alpine
@@ -9,6 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # Named volume keeps Postgres data across container recreates.
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U calendar -d aiscalendar"]
@@ -23,11 +27,15 @@ services:
       db:
         condition: service_healthy
     environment:
+      # Hostname `db` is the Compose service name on the internal network.
       DATABASE_URL: jdbc:postgresql://db:5432/aiscalendar
       DATABASE_USER: calendar
       DATABASE_PASSWORD: calendar
       APP_JWT_SECRET: docker-dev-change-me-ai-smart-calendar-secret
       APP_CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      # Pulled from host/.env — empty default means assistant returns 503 until set.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     ports:
       - "8080:8080"
 
@@ -37,6 +45,7 @@ services:
     depends_on:
       - backend
     environment:
+      # Baked into the Vite build for browser → host backend calls.
       VITE_API_BASE_URL: http://localhost:8080
     ports:
       - "5173:80"

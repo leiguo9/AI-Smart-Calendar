@@ -13,6 +13,12 @@ function readStoredAuth() {
   }
 }
 
+/**
+ * Holds login state for the whole app.
+ *
+ * On mount: if localStorage has a token, call /api/me to verify it still works.
+ * Children use {@link useAuth} instead of reading localStorage themselves.
+ */
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => readStoredAuth())
   const [ready, setReady] = useState(false)
@@ -37,6 +43,7 @@ export function AuthProvider({ children }) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
         }
       } catch {
+        // Expired / invalid token → force re-login.
         if (!cancelled) {
           setAuth(null)
           localStorage.removeItem(STORAGE_KEY)
@@ -46,6 +53,7 @@ export function AuthProvider({ children }) {
       }
     }
     verify()
+    // Cleanup: ignore the async result if AuthProvider unmounted mid-request.
     return () => {
       cancelled = true
     }

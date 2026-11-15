@@ -196,10 +196,114 @@ select:focus {
 }
 
 .app-shell {
-  width: min(1120px, calc(100% - 32px));
+  width: min(1280px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 48px;
   animation: rise 420ms ease both;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.assistant-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  max-height: min(78vh, 760px);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.assistant-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.assistant-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.assistant-header p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.assistant-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 12px;
+  min-height: 0;
+}
+
+.assistant-empty,
+.assistant-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.assistant-bubble {
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 0.94rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.assistant-bubble.user {
+  align-self: flex-end;
+  background: var(--brand);
+  color: #f4faf6;
+  border-bottom-right-radius: 4px;
+}
+
+.assistant-bubble.assistant {
+  align-self: flex-start;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-bottom-left-radius: 4px;
+}
+
+.assistant-error {
+  margin: 0 0 8px;
+}
+
+.assistant-composer {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.assistant-composer textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.banner.warning {
+  color: #8a5a18;
+  background: rgba(196, 92, 38, 0.1);
+  border: 1px solid rgba(196, 92, 38, 0.22);
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .topbar,
@@ -329,9 +433,18 @@ select:focus {
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   .app-shell {
-    width: min(100% - 20px, 1120px);
+    width: min(100% - 20px, 1280px);
+  }
+
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .assistant-panel {
+    min-height: 360px;
+    max-height: 480px;
   }
 
   .topbar {

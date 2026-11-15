@@ -9,8 +9,16 @@ import '@fullcalendar/react/themes/pulse/theme.css'
 import '@fullcalendar/react/themes/pulse/palettes/green.css'
 import { api } from '../api'
 import { useAuth } from '../auth.jsx'
+import EventAssistantPanel from '../components/EventAssistantPanel.jsx'
 import EventModal from '../components/EventModal.jsx'
 import { colorsForCategory, normalizeCategory } from '../eventCategories.js'
+
+/**
+ * Main signed-in screen: FullCalendar + AI assistant panel + event modal.
+ *
+ * FullCalendar calls `fetchEvents` whenever the visible date range changes.
+ * Creates/edits go through EventModal; AI drafts arrive via handlePropose.
+ */
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
@@ -36,6 +44,7 @@ function allDayEnd(end) {
   return day
 }
 
+/** Map API event → FullCalendar event object (plus category colors). */
 function toCalendarEvent(event) {
   // Pulse theme paints via --fc-event-color from the `color` prop (not backgroundColor).
   const colors = colorsForCategory(event.category)
@@ -61,6 +70,8 @@ export default function CalendarPage() {
   const [error, setError] = useState('')
   const [modal, setModal] = useState(null)
   const [busy, setBusy] = useState(false)
+  // Bumping this remounts EventAssistantPanel (clears chat after a successful AI-created save).
+  const [assistantClearSignal, setAssistantClearSignal] = useState(0)
 
   const fetchEvents = useCallback(
     async (info) => {
@@ -95,6 +106,20 @@ export default function CalendarPage() {
     setModal({ event: info.event.extendedProps.source })
   }
 
+  /** Open create modal prefilled from the assistant's propose_event draft. */
+  function handlePropose(draft) {
+    setModal({
+      event: null,
+      seedDate: new Date(draft.startAt),
+      seedEnd: new Date(draft.endAt),
+      seedAllDay: draft.allDay,
+      seedTitle: draft.title,
+      seedDescription: draft.description || '',
+      seedCategory: draft.category,
+      warning: draft.warning || null,
+    })
+  }
+
   async function handleEventChange(info) {
     const { event } = info
     const source = event.extendedProps.source
@@ -124,6 +149,7 @@ export default function CalendarPage() {
         await api.updateEvent(auth.token, modal.event.id, payload)
       } else {
         await api.createEvent(auth.token, payload)
+        setAssistantClearSignal((n) => n + 1)
       }
       setModal(null)
       refetch()
@@ -170,29 +196,33 @@ export default function CalendarPage() {
       {error && <p className="banner error">{error}</p>}
       {loading && <p className="banner">Loading events…</p>}
 
-      <section className="calendar-card">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={PLUGINS}
-          initialView="dayGridMonth"
-          headerToolbar={HEADER_TOOLBAR}
-          events={fetchEvents}
-          loading={setLoading}
-          // Pulse month view defaults timed events to list-item (tiny dot); block keeps category bars.
-          eventDisplay="block"
-          selectable
-          selectMirror
-          editable
-          dayMaxEvents={3}
-          nowIndicator
-          scrollTime="08:00:00"
-          eventTimeFormat={EVENT_TIME_FORMAT}
-          select={handleSelect}
-          eventClick={handleEventClick}
-          eventDrop={handleEventChange}
-          eventResize={handleEventChange}
-        />
-      </section>
+      <div className="calendar-layout">
+        <section className="calendar-card">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={PLUGINS}
+            initialView="dayGridMonth"
+            headerToolbar={HEADER_TOOLBAR}
+            events={fetchEvents}
+            loading={setLoading}
+            // Pulse month view defaults timed events to list-item (tiny dot); block keeps category bars.
+            eventDisplay="block"
+            selectable
+            selectMirror
+            editable
+            dayMaxEvents={3}
+            nowIndicator
+            scrollTime="08:00:00"
+            eventTimeFormat={EVENT_TIME_FORMAT}
+            select={handleSelect}
+            eventClick={handleEventClick}
+            eventDrop={handleEventChange}
+            eventResize={handleEventChange}
+          />
+        </section>
+
+        <EventAssistantPanel key={assistantClearSignal} onPropose={handlePropose} />
+      </div>
 
       {modal && (
         <EventModal
@@ -200,6 +230,10 @@ export default function CalendarPage() {
           seedDate={modal.seedDate}
           seedEnd={modal.seedEnd}
           seedAllDay={modal.seedAllDay}
+          seedTitle={modal.seedTitle}
+          seedDescription={modal.seedDescription}
+          seedCategory={modal.seedCategory}
+          warning={modal.warning}
           busy={busy}
           onClose={() => setModal(null)}
           onSave={saveEvent}

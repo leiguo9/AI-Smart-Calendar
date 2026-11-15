@@ -1,3 +1,5 @@
+# Spring Boot config. ${ENV_VAR:default} = use env var if set, else the default after ":".
+
 server:
   port: 8080
 
@@ -10,13 +12,16 @@ spring:
     password: ${DATABASE_PASSWORD:calendar}
   jpa:
     hibernate:
+      # Dev-friendly: create/alter tables to match entities. Prefer Flyway/Liquibase in production.
       ddl-auto: update
+    # Avoid lazy-loading surprises outside a transaction (forces explicit fetching).
     open-in-view: false
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
 
+# Custom app.* properties bound into *Properties classes (Jwt, Cors, OpenAi).
 app:
   jwt:
     # Override in production via APP_JWT_SECRET (min 32 chars)
@@ -24,6 +29,10 @@ app:
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
   cors:
     allowed-origins: ${APP_CORS_ORIGINS:http://localhost:5173}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
 
 logging:
   level:

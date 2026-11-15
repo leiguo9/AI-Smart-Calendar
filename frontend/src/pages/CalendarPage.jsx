@@ -10,6 +10,7 @@ import '@fullcalendar/react/themes/pulse/palettes/green.css'
 import { api } from '../api'
 import { useAuth } from '../auth.jsx'
 import EventModal from '../components/EventModal.jsx'
+import { colorsForCategory, normalizeCategory } from '../eventCategories.js'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
@@ -36,7 +37,14 @@ function allDayEnd(end) {
 }
 
 function toCalendarEvent(event) {
-  const base = { id: event.id, title: event.title, extendedProps: { source: event } }
+  const colors = colorsForCategory(event.category)
+  const base = {
+    id: event.id,
+    title: event.title,
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    extendedProps: { source: event },
+  }
   if (!event.allDay) {
     return { ...base, start: event.startAt, end: event.endAt }
   }
@@ -99,6 +107,7 @@ export default function CalendarPage() {
         startAt: start.toISOString(),
         endAt: end.toISOString(),
         allDay: event.allDay,
+        category: normalizeCategory(source.category),
       })
       refetch()
     } catch (err) {

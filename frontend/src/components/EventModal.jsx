@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { EVENT_CATEGORIES, normalizeCategory } from '../eventCategories.js'
 
 function toLocalInputValue(iso) {
   if (!iso) return ''
@@ -39,6 +40,7 @@ export default function EventModal({
     toLocalInputValue(event?.endAt) || toLocalInputValue(defaults.end.toISOString()),
   )
   const [allDay, setAllDay] = useState(Boolean(event ? event.allDay : seedAllDay))
+  const [category, setCategory] = useState(normalizeCategory(event?.category))
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function EventModal({
         startAt: start.toISOString(),
         endAt: end.toISOString(),
         allDay,
+        category,
       })
     } catch (err) {
       setError(err.message || 'Could not save event')
@@ -124,6 +127,16 @@ export default function EventModal({
               />
             </label>
           </div>
+          <label>
+            Category
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {EVENT_CATEGORIES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="checkbox">
             <input
               type="checkbox"

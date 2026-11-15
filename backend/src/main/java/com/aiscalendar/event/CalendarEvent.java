@@ -3,6 +3,8 @@ package com.aiscalendar.event;
 import com.aiscalendar.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -40,6 +43,11 @@ public class CalendarEvent {
   @Column(nullable = false)
   private boolean allDay = false;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 32)
+  @ColumnDefault("'OTHER'")
+  private EventCategory category = EventCategory.OTHER;
+
   @Column(nullable = false, updatable = false)
   private Instant createdAt = Instant.now();
 
@@ -54,13 +62,15 @@ public class CalendarEvent {
       String description,
       Instant startAt,
       Instant endAt,
-      boolean allDay) {
+      boolean allDay,
+      EventCategory category) {
     this.owner = owner;
     this.title = title;
     this.description = description;
     this.startAt = startAt;
     this.endAt = endAt;
     this.allDay = allDay;
+    this.category = category == null ? EventCategory.OTHER : category;
   }
 
   public UUID getId() {
@@ -91,6 +101,10 @@ public class CalendarEvent {
     return allDay;
   }
 
+  public EventCategory getCategory() {
+    return category;
+  }
+
   public Instant getCreatedAt() {
     return createdAt;
   }
@@ -100,12 +114,18 @@ public class CalendarEvent {
   }
 
   public void update(
-      String title, String description, Instant startAt, Instant endAt, boolean allDay) {
+      String title,
+      String description,
+      Instant startAt,
+      Instant endAt,
+      boolean allDay,
+      EventCategory category) {
     this.title = title;
     this.description = description;
     this.startAt = startAt;
     this.endAt = endAt;
     this.allDay = allDay;
+    this.category = category == null ? EventCategory.OTHER : category;
     this.updatedAt = Instant.now();
   }
 }

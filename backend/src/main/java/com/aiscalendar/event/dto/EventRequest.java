@@ -1,5 +1,6 @@
 package com.aiscalendar.event.dto;
 
+import com.aiscalendar.event.EventCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,4 +11,5 @@ public record EventRequest(
     @Size(max = 2000) String description,
     @NotNull Instant startAt,
     @NotNull Instant endAt,
-    boolean allDay) {}
+    boolean allDay,
+    EventCategory category) {}

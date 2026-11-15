@@ -47,7 +47,8 @@ public class EventService {
             normalizeDescription(request.description()),
             request.startAt(),
             request.endAt(),
-            request.allDay());
+            request.allDay(),
+            normalizeCategory(request.category()));
     return EventResponse.from(eventRepository.save(event));
   }
 
@@ -63,7 +64,8 @@ public class EventService {
         normalizeDescription(request.description()),
         request.startAt(),
         request.endAt(),
-        request.allDay());
+        request.allDay(),
+        normalizeCategory(request.category()));
     return EventResponse.from(event);
   }
 
@@ -87,5 +89,9 @@ public class EventService {
       return null;
     }
     return description.trim();
+  }
+
+  private EventCategory normalizeCategory(EventCategory category) {
+    return category == null ? EventCategory.OTHER : category;
   }
 }

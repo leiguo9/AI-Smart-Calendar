@@ -37,12 +37,13 @@ function allDayEnd(end) {
 }
 
 function toCalendarEvent(event) {
+  // Pulse theme paints via --fc-event-color from the `color` prop (not backgroundColor).
   const colors = colorsForCategory(event.category)
   const base = {
     id: event.id,
     title: event.title,
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    color: colors.color,
+    contrastColor: colors.contrast,
     extendedProps: { source: event },
   }
   if (!event.allDay) {
@@ -177,6 +178,8 @@ export default function CalendarPage() {
           headerToolbar={HEADER_TOOLBAR}
           events={fetchEvents}
           loading={setLoading}
+          // Pulse month view defaults timed events to list-item (tiny dot); block keeps category bars.
+          eventDisplay="block"
           selectable
           selectMirror
           editable

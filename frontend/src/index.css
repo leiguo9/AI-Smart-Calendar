@@ -251,6 +251,17 @@ select:focus {
   padding: 16px;
 }
 
+/* Pulse only solid-fills block (all-day) events; timed column events need the same category paint. */
+.calendar-card .fc-pulse-1Wx.fc-pulse-A3h {
+  background-color: var(--fc-event-color);
+  color: var(--fc-event-contrast-color);
+}
+
+.calendar-card .fc-pulse-1Wx.fc-pulse-A3h .fc-pulse-1OT,
+.calendar-card .fc-pulse-1Wx.fc-pulse-A3h .fc-pulse-UnP {
+  color: inherit;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
